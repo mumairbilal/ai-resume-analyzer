@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Resume Auditor</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+      /* Modern CSS Variables */
+      :root {
+        --primary: #4f46e5;
+        --secondary: #10b981;
+        --bg: #f3f4f6;
+        --card-bg: #ffffff;
+        --text: #1f2937;
+        --accent: #eef2ff;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg);
+        margin: 0;
+        padding: 40px;
+        color: var(--text);
+      }
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        display: grid;
+        gap: 25px;
+      }
+
+      /* Card Styling */
+      .card {
+        background: var(--card-bg);
+        padding: 30px;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s;
+      }
+
+      /* Typography */
+      h1 {
+        color: var(--primary);
+        margin-top: 0;
+        font-size: 28px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      h2 {
+        color: #111827;
+        border-bottom: 2px solid var(--bg);
+        padding-bottom: 10px;
+        margin-top: 30px;
+      }
+      h3 {
+        color: #374151;
+        margin-top: 20px;
+        font-weight: 700;
+      }
+
+      /* Upload Area */
+      .upload-box {
+        border: 2px dashed #cbd5e1;
+        padding: 40px;
+        text-align: center;
+        border-radius: 12px;
+        cursor: pointer;
+        background: #f8fafc;
+        transition: 0.3s;
+      }
+      .upload-box:hover {
+        border-color: var(--primary);
+        background: var(--accent);
+      }
+
+      /* Button */
+      button {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 14px 28px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 15px;
+        transition: 0.2s;
+      }
+      button:hover {
+        background: #4338ca;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+      }
+      button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+
+      /* Report Specific Styling (Markdown Content) */
+      #reportContent {
+        line-height: 1.7;
+      }
+      #reportContent ul {
+        padding-left: 20px;
+      }
+      #reportContent li {
+        margin-bottom: 8px;
+      }
+      #reportContent strong {
+        color: var(--primary);
+      }
+
+      /* Tables in Report */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        background: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      th,
+      td {
+        padding: 12px 15px;
+        border: 1px solid #e5e7eb;
+        text-align: left;
+      }
+      th {
+        background-color: var(--primary);
+        color: white;
+      }
+      tr:nth-child(even) {
+        background-color: #f9fafb;
+      }
+
+      /* Blockquotes */
+      blockquote {
+        border-left: 4px solid var(--secondary);
+        margin: 0;
+        padding-left: 15px;
+        color: #4b5563;
+        background: #ecfdf5;
+        padding: 15px;
+        border-radius: 0 8px 8px 0;
+      }
+
+      /* Chat Styling */
+      #chatSection {
+        display: none;
+      }
+      .chat-window {
+        height: 350px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        padding: 20px;
+        background: #f9fafb;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .message {
+        padding: 12px 18px;
+        border-radius: 12px;
+        max-width: 80%;
+        line-height: 1.5;
+        font-size: 15px;
+      }
+      .user-msg {
+        background: var(--primary);
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 2px;
+      }
+      .ai-msg {
+        background: white;
+        color: var(--text);
+        align-self: flex-start;
+        border: 1px solid #e5e7eb;
+        border-bottom-left-radius: 2px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      }
+
+      .input-group {
+        display: flex;
+        gap: 10px;
+      }
+      input {
+        flex: 1;
+        padding: 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 15px;
+        outline: none;
+      }
+      input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      }
+
+      #loader {
+        display: none;
+        text-align: center;
+        color: var(--primary);
+        margin-top: 15px;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>🚀 AI Resume Auditor</h1>
+        <p style="color: #6b7280; margin-bottom: 20px">
+          Upload your CV to get an expert HR critique & ATS score.
+        </p>
+
+        <div
+          class="upload-box"
+          onclick="document.getElementById('fileInput').click()"
+        >
+          <p style="font-size: 1.1rem; font-weight: 500">
+            📂 Drop your PDF here
+          </p>
+          <p style="font-size: 0.9rem; color: #9ca3af">
+            Supports PDF format only
+          </p>
+          <input
+            type="file"
+            id="fileInput"
+            accept=".pdf"
+            style="display: none"
+            onchange="handleFileSelect()"
+          />
+          <span
+            id="fileName"
+            style="
+              color: var(--primary);
+              font-weight: bold;
+              display: block;
+              margin-top: 10px;
+            "
+          ></span>
+        </div>
+
+        <button onclick="analyzeContract()" id="analyzeBtn">
+          Analyze Resume
+        </button>
+        <div id="loader">
+          ⚡ Artificial Intelligence is reviewing your profile...
+        </div>
+      </div>
+
+      <div class="card" id="reportSection" style="display: none">
+        <div id="reportContent"></div>
+      </div>
+
+      <div class="card" id="chatSection">
+        <h2 style="margin-top: 0; border: none">💬 Ask Career Coach</h2>
+        <div class="chat-window" id="chatWindow">
+          <div class="message ai-msg">
+            Hi! I've analyzed your resume. Need help rewriting a bullet point or
+            preparing for an interview?
+          </div>
+        </div>
+        <div class="input-group">
+          <input
+            type="text"
+            id="userQuestion"
+            placeholder="e.g., Rewrite my summary for a Senior Dev role..."
+            onkeypress="if(event.key==='Enter') sendQuestion()"
+          />
+          <button onclick="sendQuestion()" style="width: auto; margin-top: 0">
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function handleFileSelect() {
+        const file = document.getElementById("fileInput").files[0];
+        if (file)
+          document.getElementById("fileName").innerText =
+            "✅ Selected: " + file.name;
+      }
+
+      async function analyzeContract() {
+        const file = document.getElementById("fileInput").files[0];
+        if (!file) return alert("Please select a file first!");
+
+        // UI Updates
+        document.getElementById("loader").style.display = "block";
+        document.getElementById("analyzeBtn").disabled = true;
+        document.getElementById("analyzeBtn").innerText = "Analyzing...";
+        document.getElementById("reportSection").style.display = "none";
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const res = await fetch("http://127.0.0.1:8000/api/analyze", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await res.json();
+
+          // 👇 MAGIC LINE: Markdown ko HTML mein convert karna
+          document.getElementById("reportContent").innerHTML = marked.parse(
+            data.ai_report
+          );
+
+          document.getElementById("reportSection").style.display = "block";
+          document.getElementById("chatSection").style.display = "block";
+        } catch (e) {
+          alert("Error: " + e);
+        } finally {
+          document.getElementById("loader").style.display = "none";
+          document.getElementById("analyzeBtn").disabled = false;
+          document.getElementById("analyzeBtn").innerText = "Analyze Resume";
+        }
+      }
+
+      async function sendQuestion() {
+        const input = document.getElementById("userQuestion");
+        const question = input.value;
+        if (!question) return;
+
+        addMessage(question, "user-msg");
+        input.value = "";
+
+        // Chat loading state (optional UX improvement)
+        const loadingDiv = addMessage("Thinking...", "ai-msg");
+
+        try {
+          const res = await fetch("http://127.0.0.1:8000/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: question }),
+          });
+          const data = await res.json();
+
+          // Remove loading and add real message
+          loadingDiv.remove();
+
+          // Format Chat Answer too!
+          const formattedAnswer = marked.parse(data.answer);
+          const msgDiv = document.createElement("div");
+          msgDiv.className = `message ai-msg`;
+          msgDiv.innerHTML = formattedAnswer; // Render HTML
+          document.getElementById("chatWindow").appendChild(msgDiv);
+          scrollToBottom();
+        } catch (e) {
+          loadingDiv.innerText = "Error connecting to AI.";
+        }
+      }
+
+      function addMessage(text, className) {
+        const div = document.createElement("div");
+        div.className = `message ${className}`;
+        div.innerText = text;
+        document.getElementById("chatWindow").appendChild(div);
+        scrollToBottom();
+        return div; // Return element to modify later
+      }
+
+      function scrollToBottom() {
+        const chatWindow = document.getElementById("chatWindow");
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+      }
+    </script>
+  </body>
+</html>
